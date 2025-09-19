@@ -1,0 +1,91 @@
+# Go-Admin 測試配置檔案
+
+# 測試環境設定
+settings:
+  # 應用程式設定
+  application:
+    # 測試模式
+    mode: test
+    name: go-admin-test
+    port: 8080
+    host: 127.0.0.1
+    readtimeout: 30
+    writetimeout: 30
+
+  # 測試資料庫設定
+  database:
+    # 使用 SQLite 記憶體資料庫進行測試
+    dbtype: sqlite3
+    path: ":memory:"
+    config: "cache=shared&mode=memory"
+
+    # 或使用檔案式 SQLite（用於持久性測試）
+    # path: "test.db"
+    # config: "cache=shared"
+
+    # MySQL 測試資料庫設定（如需要）
+    # dbtype: mysql
+    # host: 127.0.0.1
+    # port: 3306
+    # username: test_user
+    # password: test_pass
+    # dbname: go_admin_test
+    # config: "charset=utf8mb4&parseTime=True&loc=Local"
+
+    # 連接池設定
+    max-idle-conns: 5
+    max-open-conns: 20
+    conn-max-lifetime: 300
+
+    # 日誌設定（測試時關閉詳細日誌）
+    log-mode: silent
+    log-zap: false
+
+  # JWT 測試設定
+  jwt:
+    secret: test-jwt-secret-key-for-testing
+    timeout: 1 # 1小時，測試時較短
+
+  # 日誌設定
+  log:
+    # 測試時使用錯誤級別，減少日誌輸出
+    level: error
+    path: ./test_logs
+    filename: test.log
+    max-age: 7 # 測試日誌保存 7 天
+    max-size: 10 # 單檔案最大 10MB
+    max-backups: 3 # 最多保留 3 個備份檔案
+
+  # Redis 設定（測試環境可選）
+  redis:
+    host: 127.0.0.1
+    port: 6379
+    password: ""
+    db: 1 # 使用不同的資料庫避免與正式環境衝突
+
+  # 檔案上傳設定
+  upload:
+    path: ./test_uploads
+    max-size: 1048576 # 1MB 限制，測試用
+
+  # 測試特定設定
+  test:
+    # 測試資料庫是否自動遷移
+    auto-migrate: true
+
+    # 測試資料是否自動清理
+    auto-cleanup: true
+
+    # 測試種子資料是否載入
+    load-fixtures: true
+
+    # 並發測試設定
+    concurrent:
+      max-workers: 10
+      request-timeout: 5s
+
+    # 效能測試設定
+    performance:
+      benchmark-time: 10s
+      memory-profile: false
+      cpu-profile: false

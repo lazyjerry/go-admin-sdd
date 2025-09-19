@@ -1,0 +1,501 @@
+type: collection.insomnia.rest/5.0
+name: Go-Admin API Collection
+meta:
+  id: wrk_go_admin_api_collection
+  created: 1726736400000
+  modified: 1726736400000
+  description: "Go-Admin 後台管理系統完整 API 測試集合，包含使用者管理、權限控制、系統配置等核心功能的 RESTful API 端點"
+collection:
+  # 系統健康檢查
+  - url: "{{ _.base_url }}/api/v1/health"
+    name: "系統健康檢查"
+    meta:
+      id: req_health_check
+      created: 1726736400000
+      modified: 1726736400000
+      isPrivate: false
+      description: "檢查系統狀態和服務可用性"
+      sortKey: 1000
+    method: GET
+    headers:
+      - name: Accept
+        value: application/json
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+
+  # 使用者認證
+  - url: "{{ _.base_url }}/api/v1/login"
+    name: "使用者登入"
+    meta:
+      id: req_user_login
+      created: 1726736400000
+      modified: 1726736400000
+      isPrivate: false
+      description: "使用者身份驗證，取得 JWT Token"
+      sortKey: 2000
+    method: POST
+    body:
+      mimeType: application/json
+      text: |
+        {
+          "username": "admin",
+          "password": "123456",
+          "code": "",
+          "uuid": ""
+        }
+    headers:
+      - name: Accept
+        value: application/json
+      - name: Content-Type
+        value: application/json
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+
+  - url: "{{ _.base_url }}/api/v1/logout"
+    name: "使用者登出"
+    meta:
+      id: req_user_logout
+      created: 1726736400000
+      modified: 1726736400000
+      isPrivate: false
+      description: "使用者登出，清除 JWT Token"
+      sortKey: 2100
+    method: POST
+    headers:
+      - name: Accept
+        value: application/json
+      - name: Authorization
+        value: "Bearer {{ _.jwt_token }}"
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+
+  # 使用者管理 - CRUD 操作
+  - url: "{{ _.base_url }}/api/v1/sys-user?pageSize=10&pageIndex=1"
+    name: "獲取使用者列表"
+    meta:
+      id: req_get_user_list
+      created: 1726736400000
+      modified: 1726736400000
+      isPrivate: false
+      description: "分頁查詢使用者列表，支援搜尋和篩選"
+      sortKey: 3000
+    method: GET
+    headers:
+      - name: Accept
+        value: application/json
+      - name: Authorization
+        value: "Bearer {{ _.jwt_token }}"
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+
+  - url: "{{ _.base_url }}/api/v1/sys-user/{{ _.user_id }}"
+    name: "獲取指定使用者詳情"
+    meta:
+      id: req_get_user_detail
+      created: 1726736400000
+      modified: 1726736400000
+      isPrivate: false
+      description: "根據使用者 ID 查詢單一使用者詳細資訊"
+      sortKey: 3100
+    method: GET
+    headers:
+      - name: Accept
+        value: application/json
+      - name: Authorization
+        value: "Bearer {{ _.jwt_token }}"
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+
+  - url: "{{ _.base_url }}/api/v1/sys-user"
+    name: "建立新使用者"
+    meta:
+      id: req_create_user
+      created: 1726736400000
+      modified: 1726736400000
+      isPrivate: false
+      description: "建立新的系統使用者"
+      sortKey: 3200
+    method: POST
+    body:
+      mimeType: application/json
+      text: |
+        {
+          "username": "testuser",
+          "nickName": "測試使用者",
+          "phone": "0912345678",
+          "email": "test@example.com",
+          "avatar": "",
+          "sex": "1",
+          "deptId": 1,
+          "postId": 1,
+          "roleId": 2,
+          "remark": "測試使用者帳號",
+          "status": "2",
+          "password": "password123"
+        }
+    headers:
+      - name: Accept
+        value: application/json
+      - name: Content-Type
+        value: application/json
+      - name: Authorization
+        value: "Bearer {{ _.jwt_token }}"
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+
+  - url: "{{ _.base_url }}/api/v1/sys-user/{{ _.user_id }}"
+    name: "更新使用者資訊"
+    meta:
+      id: req_update_user
+      created: 1726736400000
+      modified: 1726736400000
+      isPrivate: false
+      description: "更新指定使用者的基本資訊"
+      sortKey: 3300
+    method: PUT
+    body:
+      mimeType: application/json
+      text: |
+        {
+          "userId": "{{ _.user_id }}",
+          "username": "testuser_updated",
+          "nickName": "更新後的測試使用者",
+          "phone": "0987654321",
+          "email": "updated@example.com",
+          "avatar": "",
+          "sex": "1",
+          "deptId": 1,
+          "postId": 1,
+          "roleId": 2,
+          "remark": "已更新的測試使用者帳號",
+          "status": "2"
+        }
+    headers:
+      - name: Accept
+        value: application/json
+      - name: Content-Type
+        value: application/json
+      - name: Authorization
+        value: "Bearer {{ _.jwt_token }}"
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+
+  - url: "{{ _.base_url }}/api/v1/sys-user/{{ _.user_id }}"
+    name: "刪除指定使用者"
+    meta:
+      id: req_delete_user
+      created: 1726736400000
+      modified: 1726736400000
+      isPrivate: false
+      description: "刪除指定的使用者帳號"
+      sortKey: 3400
+    method: DELETE
+    headers:
+      - name: Accept
+        value: application/json
+      - name: Authorization
+        value: "Bearer {{ _.jwt_token }}"
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+
+  # 角色管理
+  - url: "{{ _.base_url }}/api/v1/sys-role?pageSize=10&pageIndex=1"
+    name: "獲取角色列表"
+    meta:
+      id: req_get_role_list
+      created: 1726736400000
+      modified: 1726736400000
+      isPrivate: false
+      description: "分頁查詢系統角色列表"
+      sortKey: 4000
+    method: GET
+    headers:
+      - name: Accept
+        value: application/json
+      - name: Authorization
+        value: "Bearer {{ _.jwt_token }}"
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+
+  - url: "{{ _.base_url }}/api/v1/sys-role"
+    name: "建立新角色"
+    meta:
+      id: req_create_role
+      created: 1726736400000
+      modified: 1726736400000
+      isPrivate: false
+      description: "建立新的系統角色"
+      sortKey: 4100
+    method: POST
+    body:
+      mimeType: application/json
+      text: |
+        {
+          "roleName": "測試角色",
+          "roleKey": "test_role",
+          "roleSort": 1,
+          "flag": "",
+          "remark": "測試角色說明",
+          "admin": false,
+          "dataScope": "",
+          "menuIds": [],
+          "deptIds": [],
+          "status": "2"
+        }
+    headers:
+      - name: Accept
+        value: application/json
+      - name: Content-Type
+        value: application/json
+      - name: Authorization
+        value: "Bearer {{ _.jwt_token }}"
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+
+  # 部門管理
+  - url: "{{ _.base_url }}/api/v1/sys-dept"
+    name: "獲取部門樹狀結構"
+    meta:
+      id: req_get_dept_tree
+      created: 1726736400000
+      modified: 1726736400000
+      isPrivate: false
+      description: "取得部門的樹狀組織結構"
+      sortKey: 5000
+    method: GET
+    headers:
+      - name: Accept
+        value: application/json
+      - name: Authorization
+        value: "Bearer {{ _.jwt_token }}"
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+
+  # 選單管理
+  - url: "{{ _.base_url }}/api/v1/sys-menu"
+    name: "獲取選單列表"
+    meta:
+      id: req_get_menu_list
+      created: 1726736400000
+      modified: 1726736400000
+      isPrivate: false
+      description: "取得系統選單列表"
+      sortKey: 6000
+    method: GET
+    headers:
+      - name: Accept
+        value: application/json
+      - name: Authorization
+        value: "Bearer {{ _.jwt_token }}"
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+
+  # 字典管理
+  - url: "{{ _.base_url }}/api/v1/sys-dict-data?pageSize=10&pageIndex=1"
+    name: "獲取字典資料列表"
+    meta:
+      id: req_get_dict_data_list
+      created: 1726736400000
+      modified: 1726736400000
+      isPrivate: false
+      description: "分頁查詢系統字典資料"
+      sortKey: 7000
+    method: GET
+    headers:
+      - name: Accept
+        value: application/json
+      - name: Authorization
+        value: "Bearer {{ _.jwt_token }}"
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+
+  # 錯誤處理測試案例
+  - url: "{{ _.base_url }}/api/v1/sys-user/999999"
+    name: "測試：查詢不存在的使用者 (404)"
+    meta:
+      id: req_test_user_not_found
+      created: 1726736400000
+      modified: 1726736400000
+      isPrivate: false
+      description: "測試查詢不存在使用者時的錯誤處理"
+      sortKey: 8000
+    method: GET
+    headers:
+      - name: Accept
+        value: application/json
+      - name: Authorization
+        value: "Bearer {{ _.jwt_token }}"
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+
+  - url: "{{ _.base_url }}/api/v1/sys-user"
+    name: "測試：建立使用者驗證錯誤 (422)"
+    meta:
+      id: req_test_validation_error
+      created: 1726736400000
+      modified: 1726736400000
+      isPrivate: false
+      description: "測試建立使用者時輸入驗證錯誤處理"
+      sortKey: 8100
+    method: POST
+    body:
+      mimeType: application/json
+      text: |
+        {
+          "username": "",
+          "nickName": "",
+          "email": "invalid-email",
+          "phone": "123"
+        }
+    headers:
+      - name: Accept
+        value: application/json
+      - name: Content-Type
+        value: application/json
+      - name: Authorization
+        value: "Bearer {{ _.jwt_token }}"
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+
+  - url: "{{ _.base_url }}/api/v1/sys-user?pageSize=10&pageIndex=1"
+    name: "測試：未授權存取 (401)"
+    meta:
+      id: req_test_unauthorized
+      created: 1726736400000
+      modified: 1726736400000
+      isPrivate: false
+      description: "測試未提供有效 JWT Token 時的錯誤處理"
+      sortKey: 8200
+    method: GET
+    headers:
+      - name: Accept
+        value: application/json
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+
+environments:
+  - name: "Local Development"
+    meta:
+      id: env_local_dev
+      created: 1726736400000
+      modified: 1726736400000
+    data:
+      base_url: "http://localhost:8000"
+      jwt_token: ""
+      user_id: "1"
+
+  - name: "Docker Development"
+    meta:
+      id: env_docker_dev
+      created: 1726736400000
+      modified: 1726736400000
+    data:
+      base_url: "http://localhost:8080"
+      jwt_token: ""
+      user_id: "1"
+
+  - name: "Production"
+    meta:
+      id: env_production
+      created: 1726736400000
+      modified: 1726736400000
+    data:
+      base_url: "https://api.go-admin.dev"
+      jwt_token: ""
+      user_id: "1"

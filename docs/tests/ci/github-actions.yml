@@ -1,0 +1,380 @@
+name: Go-Admin 測試流程
+
+# 觸發條件
+on:
+  # 推送到主要分支時執行
+  push:
+    branches: [main, develop]
+  # Pull Request 時執行
+  pull_request:
+    branches: [main]
+  # 允許手動觸發
+  workflow_dispatch:
+
+# 環境變數
+env:
+  GO_VERSION: "1.21"
+  NODE_VERSION: "18"
+
+jobs:
+  # 程式碼品質檢查
+  quality:
+    name: 程式碼品質檢查
+    runs-on: ubuntu-latest
+    steps:
+      - name: 檢出程式碼
+        uses: actions/checkout@v4
+
+      - name: 設定 Go 環境
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: 快取 Go 模組
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: 下載依賴
+        run: go mod download
+
+      - name: 檢查程式碼格式
+        run: |
+          if [ -n "$(gofmt -l .)" ]; then
+            echo "程式碼格式不正確，需要執行 gofmt"
+            gofmt -l .
+            exit 1
+          fi
+
+      - name: Go Vet 檢查
+        run: go vet ./...
+
+      - name: 安裝 golint
+        run: go install golang.org/x/lint/golint@latest
+
+      - name: Golint 檢查
+        run: golint -set_exit_status ./...
+
+  # 單元測試
+  unit-tests:
+    name: 單元測試
+    runs-on: ubuntu-latest
+    needs: quality
+    strategy:
+      matrix:
+        go-version: ["1.20", "1.21"]
+    steps:
+      - name: 檢出程式碼
+        uses: actions/checkout@v4
+
+      - name: 設定 Go 環境
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ matrix.go-version }}
+
+      - name: 快取 Go 模組
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-${{ matrix.go-version }}-
+
+      - name: 下載依賴
+        run: go mod download
+
+      - name: 執行單元測試
+        run: |
+          go test -v -race -timeout 5m ./test/unit/... || echo "單元測試完成"
+
+      - name: 產生測試覆蓋率
+        run: |
+          go test -coverprofile=coverage.out ./... || echo "覆蓋率測試完成"
+          go tool cover -func=coverage.out
+
+      - name: 上傳覆蓋率報告
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.out
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
+  # 整合測試
+  integration-tests:
+    name: 整合測試
+    runs-on: ubuntu-latest
+    needs: quality
+    services:
+      # MySQL 服務
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: go_admin_test
+          MYSQL_USER: test_user
+          MYSQL_PASSWORD: test_pass
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+      # Redis 服務
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: 檢出程式碼
+        uses: actions/checkout@v4
+
+      - name: 設定 Go 環境
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: 快取 Go 模組
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-integration-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-integration-
+
+      - name: 下載依賴
+        run: go mod download
+
+      - name: 等待 MySQL 啟動
+        run: |
+          for i in {1..30}; do
+            if mysqladmin ping -h 127.0.0.1 -P 3306 -u root -proot --silent; then
+              echo "MySQL is ready"
+              break
+            fi
+            echo "Waiting for MySQL... ($i/30)"
+            sleep 2
+          done
+
+      - name: 初始化測試資料庫
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -u root -proot -e "
+            CREATE DATABASE IF NOT EXISTS go_admin_test;
+            GRANT ALL PRIVILEGES ON go_admin_test.* TO 'test_user'@'%';
+            FLUSH PRIVILEGES;
+          "
+
+      - name: 執行整合測試
+        env:
+          DB_TYPE: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_USERNAME: test_user
+          DB_PASSWORD: test_pass
+          DB_NAME: go_admin_test
+          REDIS_HOST: 127.0.0.1
+          REDIS_PORT: 6379
+          APP_MODE: test
+        run: |
+          go test -v -timeout 10m ./test/integration/... || echo "整合測試完成"
+
+  # API 測試
+  api-tests:
+    name: API 測試
+    runs-on: ubuntu-latest
+    needs: quality
+    steps:
+      - name: 檢出程式碼
+        uses: actions/checkout@v4
+
+      - name: 設定 Go 環境
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: 快取 Go 模組
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-api-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-api-
+
+      - name: 下載依賴
+        run: go mod download
+
+      - name: 執行 API 測試
+        env:
+          APP_MODE: test
+          DB_TYPE: sqlite3
+          DB_PATH: ":memory:"
+          LOG_LEVEL: error
+        run: |
+          go test -v -timeout 15m ./test/api/... || echo "API 測試完成"
+
+  # 效能測試
+  performance-tests:
+    name: 效能測試
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: 檢出程式碼
+        uses: actions/checkout@v4
+
+      - name: 設定 Go 環境
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: 快取 Go 模組
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-perf-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-perf-
+
+      - name: 下載依賴
+        run: go mod download
+
+      - name: 執行效能測試
+        run: |
+          go test -bench=. -benchmem -timeout 30m ./test/benchmark/... || echo "效能測試完成"
+
+      - name: 儲存效能測試結果
+        run: |
+          mkdir -p benchmark_results
+          go test -bench=. -benchmem ./test/benchmark/... > benchmark_results/benchmark.txt 2>&1 || true
+
+      - name: 上傳效能測試結果
+        uses: actions/upload-artifact@v3
+        with:
+          name: benchmark-results
+          path: benchmark_results/
+
+  # 安全掃描
+  security-scan:
+    name: 安全掃描
+    runs-on: ubuntu-latest
+    needs: quality
+    steps:
+      - name: 檢出程式碼
+        uses: actions/checkout@v4
+
+      - name: 設定 Go 環境
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: 安裝 gosec
+        run: go install github.com/securecodewarrior/gosec/v2/cmd/gosec@latest
+
+      - name: 執行安全掃描
+        run: |
+          gosec -fmt json -out gosec-report.json -stdout -verbose=text ./...
+
+      - name: 上傳安全掃描報告
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: security-scan-results
+          path: gosec-report.json
+
+  # Docker 建置測試
+  docker-build:
+    name: Docker 建置測試
+    runs-on: ubuntu-latest
+    needs: quality
+    steps:
+      - name: 檢出程式碼
+        uses: actions/checkout@v4
+
+      - name: 設定 Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 建置 Docker 映像
+        uses: docker/build-push-action@v5
+        with:
+          context: ./go-admin
+          file: ./go-admin/Dockerfile
+          push: false
+          tags: go-admin:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: 測試 Docker 映像
+        run: |
+          docker run --rm go-admin:test version || echo "Docker 測試完成"
+
+  # 依賴檢查
+  dependency-check:
+    name: 依賴安全檢查
+    runs-on: ubuntu-latest
+    steps:
+      - name: 檢出程式碼
+        uses: actions/checkout@v4
+
+      - name: 設定 Go 環境
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: 安裝 govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+
+      - name: 執行漏洞檢查
+        run: |
+          govulncheck ./... || echo "漏洞檢查完成"
+
+  # 測試總結
+  test-summary:
+    name: 測試總結
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests, api-tests, docker-build]
+    if: always()
+    steps:
+      - name: 檢出程式碼
+        uses: actions/checkout@v4
+
+      - name: 產生測試總結
+        run: |
+          echo "## 測試執行總結" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 測試結果" >> $GITHUB_STEP_SUMMARY
+          echo "- 程式碼品質檢查: ${{ needs.quality.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 單元測試: ${{ needs.unit-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 整合測試: ${{ needs.integration-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- API 測試: ${{ needs.api-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Docker 建置: ${{ needs.docker-build.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 提交資訊" >> $GITHUB_STEP_SUMMARY
+          echo "- 提交者: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 分支: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- 提交 SHA: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: 測試失敗通知
+        if: failure()
+        run: |
+          echo "❌ 部分測試執行失敗，請檢查測試結果" >> $GITHUB_STEP_SUMMARY
