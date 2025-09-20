@@ -14,7 +14,7 @@ description: "專案變更日誌文件生成規範"
 **AI 代理必須在以下情況完成後自動建立變更日誌：**
 
 1. **任務執行完成** - 當 AI 完成用戶指派的開發任務後
-2. **重大變更** - 進行重構、新增功能或重大修改後  
+2. **重大變更** - 進行重構、新增功能或重大修改後
 3. **多檔案變更** - 變更超過 5 個檔案或 100 行程式碼後
 4. **架構調整** - 涉及系統架構或配置的重要變更後
 
@@ -58,7 +58,7 @@ docs/changes/{YYYY}/{MM}/{變更類型}-{簡短描述}.md
 ### 變更類型（簡化）
 
 - `feature` - 新功能
-- `refactor` - 重構  
+- `refactor` - 重構
 - `fix` - 修復
 - `update` - 更新
 - `config` - 配置
@@ -234,6 +234,7 @@ app/
 ### 1. 自動目錄建立
 
 **AI 代理自動執行：**
+
 - 檢查並建立 `docs/changes/{YYYY}/{MM}/` 目錄結構
 - 自動確定年月日期（使用系統當前時間）
 - 避免目錄名稱衝突和重複建立
@@ -241,6 +242,7 @@ app/
 ### 2. 版本控制整合
 
 **自動化流程：**
+
 - AI 完成變更日誌建立後自動提交到 Git
 - 提交訊息自動包含變更摘要和檔案路徑
 - 保持變更日誌與程式碼變更的同步性
@@ -248,13 +250,15 @@ app/
 ### 3. 檔案關聯與索引
 
 **自動更新：**
-- 在主 README.md 中更新變更日誌索引  
+
+- 在主 README.md 中更新變更日誌索引
 - 建立月度和年度的變更摘要連結
 - 相關功能文件中自動引用對應變更
 
 ### 4. 歸檔與整理
 
 **長期維護策略：**
+
 - 按年度自動歸檔舊的變更記錄至 `docs/archive/`
 - 保持當年度的變更在 `docs/changes/` 主目錄
 - 自動清理和整理過時的技術細節
@@ -267,7 +271,7 @@ app/
 
 現有範例檔案（使用新規範後的結構）：
 
-- `docs/changes/2025/09/docs-testing-infrastructure-enhancement.md`  
+- `docs/changes/2025/09/docs-testing-infrastructure-enhancement.md`
 - `docs/changes/2025/09/docs-documentation-project.md`
 - `docs/changes/2025/09/feature-project-completion-report.md`
 
@@ -275,7 +279,7 @@ app/
 
 以下檔案將需要移動到新的目錄結構：
 
-- `docs/changes/2025-09-19-testing-infrastructure-enhancement.md` 
+- `docs/changes/2025-09-19-testing-infrastructure-enhancement.md`
   → `docs/changes/2025/09/docs-testing-infrastructure-enhancement.md`
 - `docs/changes/2025-09-19-documentation-project.md`
   → `docs/changes/2025/09/docs-documentation-project.md`
@@ -367,21 +371,24 @@ app/
 ### 1. AI 自動檢視與維護
 
 **每次任務執行時 AI 應：**
+
 - 檢查目錄結構的完整性和一致性
-- 驗證變更日誌內容的準確性和完整性  
+- 驗證變更日誌內容的準確性和完整性
 - 更新相關文件的索引和連結
 - 確保檔案命名和內容符合最新規範
 
 ### 2. 持續最佳化
 
 **AI 應持續：**
+
 - 根據實際使用經驗最佳化文件結構
 - 改進變更描述的清晰度和實用性
 - 保持與主專案的技術演進同步
 
 ### 3. 品質保證
 
-**每次生成變更日誌時，AI 必須：** 
+**每次生成變更日誌時，AI 必須：**
+
 - 確保所有程式碼範例可執行正確
 - 驗證所有檔案路徑和連結的有效性
 - 使用繁體中文和正確的技術術語
