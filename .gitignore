@@ -6,7 +6,6 @@
 *.dll
 *.so
 *.dylib
-go-admin
 go-admin.exe
 main
 main.exe
