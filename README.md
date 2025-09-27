@@ -2,6 +2,8 @@
 
 基於 Gin + Vue + Element UI 的前後端分離權限管理系統，提供完整的 RBAC 權限控制模型，支援程式碼生成、表單建構等功能，極致簡化系統初始化流程。
 
+> **專案來源**: 本專案基於 [go-admin-team/go-admin](https://github.com/go-admin-team/go-admin) 原始專案進行中文化和文檔完善
+
 ## 主要特色
 
 - **RESTful API 設計** - 遵循 REST API 設計規範，提供豐富的中間件支援
